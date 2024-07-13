@@ -21,10 +21,8 @@ public class SwaggerConfig {
     private static final String AUTH_TOKEN = "Authorization";
 
     SecurityScheme apiAuth = new SecurityScheme()
-            .type(SecurityScheme.Type.HTTP)
+            .type(SecurityScheme.Type.APIKEY)
             .in(SecurityScheme.In.HEADER)
-            .scheme("Bearer")
-            .bearerFormat("JWT")
             .name(AUTH_TOKEN);
 
     SecurityRequirement addSecurityItem = new SecurityRequirement()
@@ -52,7 +50,8 @@ public class SwaggerConfig {
     @Bean
     public OperationCustomizer customizeOperation() {
         return (operation, handlerMethod) -> {
-            HandlerMethod method = handlerMethod;
+            HandlerMethod method = (HandlerMethod) handlerMethod;
+            method.getMethodParameters();
             method.getMethodParameters();
             if (Arrays.stream(method.getMethodParameters()).anyMatch(param -> param.hasParameterAnnotation(MemberId.class))) {
                 operation.getParameters().removeIf(param -> "memberId".equals(param.getName()));
