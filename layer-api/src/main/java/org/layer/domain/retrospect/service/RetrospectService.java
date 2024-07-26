@@ -1,11 +1,6 @@
 package org.layer.domain.retrospect.service;
 
-import static org.layer.common.exception.MemberSpaceRelationExceptionType.*;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import lombok.RequiredArgsConstructor;
 import org.layer.domain.answer.entity.Answers;
 import org.layer.domain.answer.repository.AnswerRepository;
 import org.layer.domain.form.entity.Form;
@@ -26,74 +21,80 @@ import org.layer.domain.space.repository.MemberSpaceRelationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.layer.common.exception.MemberSpaceRelationExceptionType.NOT_FOUND_MEMBER_SPACE_RELATION;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RetrospectService {
 
-	private final RetrospectRepository retrospectRepository;
-	private final MemberSpaceRelationRepository memberSpaceRelationRepository;
-	private final QuestionRepository questionRepository;
-	private final AnswerRepository answerRepository;
-	private final FormRepository formRepository;
+    private final RetrospectRepository retrospectRepository;
+    private final MemberSpaceRelationRepository memberSpaceRelationRepository;
+    private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
+    private final FormRepository formRepository;
 
-	@Transactional
-	public void createRetrospect(RetrospectCreateServiceRequest request, Long memberId) {
-		// 해당 스페이스 팀원인지 검증
-		validateTeamMember(request.spaceId(), memberId);
+    @Transactional
+    public Long createRetrospect(RetrospectCreateServiceRequest request, Long memberId) {
+        // 해당 스페이스 팀원인지 검증
+        validateTeamMember(request.spaceId(), memberId);
 
-		Retrospect retrospect = getRetrospect(request);
-		Retrospect savedRetrospect = retrospectRepository.save(retrospect);
+        Retrospect retrospect = getRetrospect(request);
+        Retrospect savedRetrospect = retrospectRepository.save(retrospect);
 
-		AtomicInteger teamIndex = new AtomicInteger(1);
-		List<Question> questions = request.questions().stream()
-			.map(q -> new Question(savedRetrospect.getId(), q, teamIndex.getAndIncrement(), QuestionOwner.TEAM, QuestionType.PLAIN_TEXT))
-			.toList();
-		questionRepository.saveAll(questions);
+        AtomicInteger teamIndex = new AtomicInteger(1);
+        List<Question> questions = request.questions().stream()
+                .map(q -> new Question(savedRetrospect.getId(), q, teamIndex.getAndIncrement(), QuestionOwner.TEAM, QuestionType.PLAIN_TEXT))
+                .toList();
+        questionRepository.saveAll(questions);
 
-		// 내 회고 폼에 추가
-		Form form = new Form(memberId, request.title(), request.introduction());
-		Form savedForm = formRepository.save(form);
+        // 내 회고 폼에 추가
+        Form form = new Form(memberId, request.title(), request.introduction());
+        Form savedForm = formRepository.save(form);
 
-		AtomicInteger myIndex = new AtomicInteger(1);
-		List<Question> myQuestions = request.questions().stream()
-			.map(q -> new Question(savedForm.getId(), q, myIndex.getAndIncrement(), QuestionOwner.INDIVIDUAL, QuestionType.PLAIN_TEXT))
-			.toList();
-		questionRepository.saveAll(myQuestions);
-	}
+        AtomicInteger myIndex = new AtomicInteger(1);
+        List<Question> myQuestions = request.questions().stream()
+                .map(q -> new Question(savedForm.getId(), q, myIndex.getAndIncrement(), QuestionOwner.INDIVIDUAL, QuestionType.PLAIN_TEXT))
+                .toList();
+        questionRepository.saveAll(myQuestions);
 
-	private Retrospect getRetrospect(RetrospectCreateServiceRequest request) {
-		return Retrospect.builder()
-			.title(request.title())
-			.spaceId(request.spaceId())
-			.introduction(request.introduction())
-			.retrospectStatus(RetrospectStatus.PROCEEDING)
-			.build();
-	}
+        return retrospect.getId();
+    }
 
-	public RetrospectListGetServiceResponse getRetrospects(Long spaceId, Long memberId) {
-		// 해당 스페이스 팀원인지 검증
-		validateTeamMember(spaceId, memberId);
+    private Retrospect getRetrospect(RetrospectCreateServiceRequest request) {
+        return Retrospect.builder()
+                .title(request.title())
+                .spaceId(request.spaceId())
+                .introduction(request.introduction())
+                .retrospectStatus(RetrospectStatus.PROCEEDING)
+                .build();
+    }
 
-		List<Retrospect> retrospects = retrospectRepository.findAllBySpaceId(spaceId);
-		List<Long> retrospectIds = retrospects.stream().map(Retrospect::getId).toList();
-		Answers answers = new Answers(answerRepository.findAllByRetrospectIdIn(retrospectIds));
+    public RetrospectListGetServiceResponse getRetrospects(Long spaceId, Long memberId) {
+        // 해당 스페이스 팀원인지 검증
+        validateTeamMember(spaceId, memberId);
 
-		List<RetrospectGetServiceResponse> retrospectDtos = retrospects.stream()
-			.map(r -> RetrospectGetServiceResponse.of(r.getTitle(), r.getIntroduction(),
-				answers.hasRetrospectAnswer(memberId, r.getId()), r.getRetrospectStatus(), answers.getWriteCount(r.getId())))
-			.toList();
+        List<Retrospect> retrospects = retrospectRepository.findAllBySpaceId(spaceId);
+        List<Long> retrospectIds = retrospects.stream().map(Retrospect::getId).toList();
+        Answers answers = new Answers(answerRepository.findAllByRetrospectIdIn(retrospectIds));
 
-		return RetrospectListGetServiceResponse.of(retrospects.size(), retrospectDtos);
-	}
+        List<RetrospectGetServiceResponse> retrospectDtos = retrospects.stream()
+                .map(r -> RetrospectGetServiceResponse.of(r.getTitle(), r.getIntroduction(),
+                        answers.hasRetrospectAnswer(memberId, r.getId()), r.getRetrospectStatus(), answers.getWriteCount(r.getId())))
+                .toList();
 
-	private void validateTeamMember(Long request, Long memberId) {
-		Optional<MemberSpaceRelation> team = memberSpaceRelationRepository.findBySpaceIdAndMemberId(
-			request, memberId);
-		if (team.isEmpty()) {
-			throw new MemberSpaceRelationException(NOT_FOUND_MEMBER_SPACE_RELATION);
-		}
-	}
+        return RetrospectListGetServiceResponse.of(retrospects.size(), retrospectDtos);
+    }
+
+    private void validateTeamMember(Long request, Long memberId) {
+        Optional<MemberSpaceRelation> team = memberSpaceRelationRepository.findBySpaceIdAndMemberId(
+                request, memberId);
+        if (team.isEmpty()) {
+            throw new MemberSpaceRelationException(NOT_FOUND_MEMBER_SPACE_RELATION);
+        }
+    }
 }
