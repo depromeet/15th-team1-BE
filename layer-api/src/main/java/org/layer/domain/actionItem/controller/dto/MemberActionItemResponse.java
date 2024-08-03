@@ -20,12 +20,6 @@ public record MemberActionItemResponse (@NotNull
                                         @Schema(description = "액션 아이템이 속해 있는 스페이스 이름")
                                         String spaceName,
                                         @NotNull
-                                        @Schema(description = "액션 아이템과 매핑되는 회고 ID")
-                                        Long retrospectId,
-                                        @NotNull
-                                        @Schema(description = "액션 아이템과 매핑되는 회고 이름")
-                                        String retrospectName,
-                                        @NotNull
                                         @Schema(description = "팀 스페이스의 액션 아이템인지, 개인 스페이스의 액션 아이템인지")
                                         Boolean isTeam){
 
@@ -35,8 +29,6 @@ public record MemberActionItemResponse (@NotNull
                 .actionItemContent(actionItem.getContent())
                 .spaceId(actionItem.getSpaceId())
                 .spaceName(spaceName)
-                .retrospectId(actionItem.getRetrospectId())
-                .retrospectName(retrospectName)
                 .isTeam(isTeam)
                 .build();
     }

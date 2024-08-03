@@ -10,7 +10,7 @@ import java.util.List;
 import static org.layer.common.exception.ActionItemExceptionType.NOT_FOUND_ACTION_ITEM;
 
 public interface ActionItemRepository extends JpaRepository<ActionItem, Long> {
-    List<ActionItem> findAllByMemberIdAndActionItemStatusOrderByCreatedAtDesc(Long memberId, ActionItemStatus actionItemStatus);
+    List<ActionItem> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
 
     List<ActionItem> findAllBySpaceIdAndActionItemStatusOrderByCreatedAtDesc(Long spaceId, ActionItemStatus actionItemStatus);
 

@@ -18,7 +18,19 @@ public record SpaceActionItemElementResponse(
                                     Long retrospectId,
                                     @NotNull
                                     @Schema(description = "액션 아이템과 매핑되는 회고 이름")
-                                    String retrospectName) {
+                                    String retrospectName,
+                                    @NotNull
+                                    @Schema(description = "액션 아이템과 매핑되는 스페이스 ID")
+                                    Long spaceId,
+                                    @NotNull
+                                    @Schema(description = "액션 아이템과 매핑되는 스페이스 이름")
+                                    String spaceName,
+                                    @NotNull
+                                    @Schema(description = "핀의 여부")
+                                    String isPinned,
+                                    @NotNull
+                                    @Schema(description = "회고의 진행 상태")
+                                    String status) {
 
     public static SpaceActionItemElementResponse toResponse(ActionItem actionItem, String retrospectName) {
         return SpaceActionItemElementResponse.builder()

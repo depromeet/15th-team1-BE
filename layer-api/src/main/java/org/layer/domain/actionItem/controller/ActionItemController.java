@@ -3,11 +3,7 @@ package org.layer.domain.actionItem.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.layer.common.annotation.MemberId;
-import org.layer.domain.actionItem.controller.dto.CreateActionItemRequest;
-import org.layer.domain.actionItem.controller.dto.CreateActionItemResponse;
-import org.layer.domain.actionItem.controller.dto.DeleteActionItemResponse;
-import org.layer.domain.actionItem.controller.dto.MemberActionItemResponse;
-import org.layer.domain.actionItem.controller.dto.SpaceActionItemResponse;
+import org.layer.domain.actionItem.controller.dto.*;
 import org.layer.domain.actionItem.service.ActionItemService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,17 +25,22 @@ public class ActionItemController implements ActionItemApi {
     public ResponseEntity<CreateActionItemResponse> createActionItem(@MemberId Long memberId,
                                                                      @Validated @RequestBody CreateActionItemRequest createActionItemRequest) {
         CreateActionItemResponse actionItem = actionItemService.createActionItem(memberId,
-                createActionItemRequest.retrospectId(),
+                createActionItemRequest.spaceId(),
                 createActionItemRequest.content());
 
         return new ResponseEntity<>(actionItem, HttpStatus.CREATED);
     }
 
     @Override
-    @GetMapping("/member/{memberId}")
+    public ResponseEntity<Void> createPrivateActionItem(Long memberId, CreatePrivateActionItemRequest createActionItemRequest) {
+        return null;
+    }
+
+    @Override
+    @GetMapping("/member")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<MemberActionItemResponse>> memberActionItem(@MemberId Long currentMemberId, @PathVariable("memberId") Long memberId) {
-        List<MemberActionItemResponse> memberActionItemList = actionItemService.getMemberActionItemList(currentMemberId, memberId);
+    public ResponseEntity<List<MemberActionItemResponse>> memberActionItem(@MemberId Long currentMemberId) {
+        List<MemberActionItemResponse> memberActionItemList = actionItemService.getMemberActionItemList(currentMemberId);
 
         return new ResponseEntity<>(memberActionItemList, HttpStatus.OK);
     }
